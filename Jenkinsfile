@@ -1,5 +1,11 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'python:3.12'  // Use Python Docker image
+            args '-v ${WORKSPACE}:/workspace' // Mount workspace for better performance
+            reuseNode true // Run on the same node as the Jenkins agent
+        }
+    }
     
     // Define parameters for the pipeline
     parameters {
@@ -24,24 +30,10 @@ pipeline {
             }
         }
         
-        stage('Setup Python') {
-            steps {
-                // Setup Python environment
-                sh '''
-                    python -m venv venv
-                    . venv/bin/activate
-                    python -m pip install --upgrade pip
-                '''
-            }
-        }
-        
         stage('Read JSON') {
             steps {
-                // Activate virtual environment and run the Python script
-                sh '''
-                    . venv/bin/activate
-                    python read_json.py --file ${JSON_FILE_PATH}
-                '''
+                // No need for venv in Docker - Python is already set up
+                sh "python read_json.py --file ${params.JSON_FILE_PATH}"
             }
         }
     }
@@ -52,10 +44,6 @@ pipeline {
         }
         failure {
             echo "Failed to process JSON file in ${ENV_NAME} environment"
-        }
-        always {
-            // Clean up
-            sh "rm -rf venv"
         }
     }
 }
