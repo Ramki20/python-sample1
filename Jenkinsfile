@@ -54,7 +54,7 @@ pipeline {
         }
         always {
             // Clean up
-            bat "rm -rf venv"
+            bat "rmdir /s /q venv"
         }
     }
 }
