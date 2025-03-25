@@ -8,6 +8,7 @@ pipeline {
     
     // Define environment variables
     environment {
+        BRANCH_NAME = "${env.GIT_BRANCH ?: 'main'}".replaceFirst('origin/', '')
         ENV_NAME = "${BRANCH_NAME}" // Uses the branch name to determine environment
     }
     
