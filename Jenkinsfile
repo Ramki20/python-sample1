@@ -54,7 +54,7 @@ pipeline {
         }
         always {
             // Clean up
-            bat "rmdir /s /q venv"
+            bat 'if exist venv rmdir /s /q venv'
         }
     }
 }
