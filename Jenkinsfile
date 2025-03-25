@@ -18,15 +18,15 @@ pipeline {
                 checkout scm
                 
                 // Display current branch info
-                sh "echo 'Current branch: ${BRANCH_NAME}'"
-                sh "echo 'Environment: ${ENV_NAME}'"
+                bat "echo 'Current branch: ${BRANCH_NAME}'"
+                bat "echo 'Environment: ${ENV_NAME}'"
             }
         }
         
         stage('Setup Python') {
             steps {
                 // Setup Python environment
-                sh '''
+                bat '''
                     python -m venv venv
                     . venv/bin/activate
                     pip install --upgrade pip
@@ -37,7 +37,7 @@ pipeline {
         stage('Read JSON') {
             steps {
                 // Activate virtual environment and run the Python script
-                sh '''
+                bat '''
                     . venv/bin/activate
                     python read_json.py --file ${JSON_FILE_PATH}
                 '''
@@ -54,7 +54,7 @@ pipeline {
         }
         always {
             // Clean up
-            sh "rm -rf venv"
+            bat "rm -rf venv"
         }
     }
 }
