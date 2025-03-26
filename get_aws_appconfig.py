@@ -12,14 +12,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger('aws_appconfig')
 
-def get_aws_appconfig(application_name, configuration_profile, environment='default'):
+def get_aws_appconfig(application_name, configuration_profile, environment='devl'):
     """
     Retrieve the latest configuration from AWS AppConfig using AppConfig Data API
     
     Args:
         application_name (str): AWS AppConfig application name
         configuration_profile (str): AWS AppConfig configuration profile
-        environment (str): AWS AppConfig environment name (default: 'default')
+        environment (str): AWS AppConfig environment name (default: 'devl')
         
     Returns:
         dict: Retrieved configuration data
