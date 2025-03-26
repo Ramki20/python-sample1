@@ -6,7 +6,7 @@ pipeline {
         string(name: 'JSON_FILE_PATH', defaultValue: 'data/config.json', description: 'Path to the JSON file to read')
         string(name: 'AWS_APPCONFIG_APP', defaultValue: 'app0001', description: 'AWS AppConfig application name')
         string(name: 'AWS_APPCONFIG_PROFILE', defaultValue: 'olacon1', description: 'AWS AppConfig configuration profile')
-        string(name: 'AWS_APPCONFIG_ENV', defaultValue: 'default', description: 'AWS AppConfig environment')
+        string(name: 'AWS_APPCONFIG_ENV', defaultValue: 'devl', description: 'AWS AppConfig environment')
     }
     
     // Define environment variables
