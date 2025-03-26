@@ -19,7 +19,7 @@ def get_aws_appconfig(application_name, configuration_profile, environment='devl
     Args:
         application_name (str): AWS AppConfig application name
         configuration_profile (str): AWS AppConfig configuration profile
-        environment (str): AWS AppConfig environment name (default: 'devl')
+        environment (str): AWS AppConfig environment name (devl: 'devl')
         
     Returns:
         dict: Retrieved configuration data
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Retrieve and log AWS AppConfig')
     parser.add_argument('--app', type=str, required=True, help='AWS AppConfig application name')
     parser.add_argument('--profile', type=str, required=True, help='AWS AppConfig configuration profile')
-    parser.add_argument('--env', type=str, default='devl', help='AWS AppConfig environment name')
+    parser.add_argument('--env', type=str, devl='devl', help='AWS AppConfig environment name')
     
     args = parser.parse_args()
     get_aws_appconfig(args.app, args.profile, args.env)
