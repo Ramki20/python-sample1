@@ -14,6 +14,7 @@ pipeline {
         BRANCH_NAME = "${env.GIT_BRANCH ?: 'main'}".replaceFirst('origin/', '')
         ENV_NAME = "${BRANCH_NAME}" // Uses the branch name to determine environment
         AWS_REGION = "us-east-1" // Default AWS region, can be overridden
+        VENV_PATH = "${WORKSPACE}/venv"
     }
     
     stages {
@@ -28,27 +29,27 @@ pipeline {
             }
         }
         
-        stage('Install Python and Dependencies') {
+        stage('Setup Python Environment') {
             steps {
-                // Attempt to install Python directly
+                // Ensure python3-full and python3-venv are installed
                 sh '''
-                    # Update package lists
-                    apt-get update -y || true
+                    echo "Checking Python installation..."
+                    python3 --version
                     
-                    # Install Python 3 and pip
-                    apt-get install -y python3 python3-pip || true
+                    # Install python3-full and python3-venv (if possible)
+                    apt-get update -y && apt-get install -y python3-full python3-venv || true
                     
-                    # If that fails due to permissions, try with sudo
-                    if ! command -v python3 &> /dev/null; then
-                        sudo apt-get update -y || true
-                        sudo apt-get install -y python3 python3-pip || true
-                    fi
+                    # Create a virtual environment
+                    echo "Creating virtual environment at ${VENV_PATH}"
+                    python3 -m venv ${VENV_PATH}
                     
-                    # Check if Python was successfully installed
-                    python3 --version || echo "Failed to install Python3"
+                    # Activate virtual environment and install dependencies
+                    . ${VENV_PATH}/bin/activate
+                    pip install --upgrade pip
+                    pip install boto3
                     
-                    # Install AWS SDK for Python (boto3)
-                    python3 -m pip install boto3 || sudo python3 -m pip install boto3
+                    # Verify installations
+                    pip list | grep boto3
                 '''
             }
         }
@@ -57,15 +58,11 @@ pipeline {
             steps {
                 // Run Python script with appropriate command
                 sh '''
-                    if command -v python3 &> /dev/null; then
-                        python3 read_json.py --file ${JSON_FILE_PATH}
-                    elif command -v python &> /dev/null; then
-                        python read_json.py --file ${JSON_FILE_PATH}
-                    else
-                        echo "ERROR: No Python interpreter found."
-                        echo "Please install Python in your Jenkins environment."
-                        exit 1
-                    fi
+                    # Activate virtual environment
+                    . ${VENV_PATH}/bin/activate
+                    
+                    # Run the script
+                    python read_json.py --file ${JSON_FILE_PATH}
                 '''
             }
         }
@@ -85,14 +82,11 @@ pipeline {
                         sh '''
                             echo "Retrieving AWS AppConfig for application: ${AWS_APPCONFIG_APP}, profile: ${AWS_APPCONFIG_PROFILE}"
                             
-                            if command -v python3 &> /dev/null; then
-                                python3 get_aws_appconfig.py --app ${AWS_APPCONFIG_APP} --profile ${AWS_APPCONFIG_PROFILE} --env ${AWS_APPCONFIG_ENV}
-                            elif command -v python &> /dev/null; then
-                                python get_aws_appconfig.py --app ${AWS_APPCONFIG_APP} --profile ${AWS_APPCONFIG_PROFILE} --env ${AWS_APPCONFIG_ENV}
-                            else
-                                echo "ERROR: No Python interpreter found."
-                                exit 1
-                            fi
+                            # Activate virtual environment
+                            . ${VENV_PATH}/bin/activate
+                            
+                            # Run the script
+                            python get_aws_appconfig.py --app ${AWS_APPCONFIG_APP} --profile ${AWS_APPCONFIG_PROFILE} --env ${AWS_APPCONFIG_ENV}
                         '''
                     }
                 }
@@ -106,6 +100,10 @@ pipeline {
         }
         failure {
             echo "Failed to process JSON file or AWS AppConfig in ${ENV_NAME} environment"
+        }
+        always {
+            // Clean up (optional)
+            echo "Job completed. Virtual environment can be found at: ${VENV_PATH}"
         }
     }
 }
