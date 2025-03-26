@@ -78,7 +78,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Retrieve and log AWS AppConfig')
     parser.add_argument('--app', type=str, required=True, help='AWS AppConfig application name')
     parser.add_argument('--profile', type=str, required=True, help='AWS AppConfig configuration profile')
-    parser.add_argument('--env', type=str, default='default', help='AWS AppConfig environment name')
+    parser.add_argument('--env', type=str, default='devl', help='AWS AppConfig environment name')
     
     args = parser.parse_args()
     get_aws_appconfig(args.app, args.profile, args.env)
