@@ -1,11 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'python:3.12'  // Use Python Docker image
-            args '-v ${WORKSPACE}:/workspace' // Mount workspace for better performance
-            reuseNode true // Run on the same node as the Jenkins agent
-        }
-    }
+    agent any
     
     // Define parameters for the pipeline
     parameters {
@@ -30,10 +24,42 @@ pipeline {
             }
         }
         
+        stage('Install Python') {
+            steps {
+                // Attempt to install Python directly
+                sh '''
+                    # Update package lists
+                    apt-get update -y || true
+                    
+                    # Install Python 3 and pip
+                    apt-get install -y python3 python3-pip || true
+                    
+                    # If that fails due to permissions, try with sudo
+                    if ! command -v python3 &> /dev/null; then
+                        sudo apt-get update -y || true
+                        sudo apt-get install -y python3 python3-pip || true
+                    fi
+                    
+                    # Check if Python was successfully installed
+                    python3 --version || echo "Failed to install Python3"
+                '''
+            }
+        }
+        
         stage('Read JSON') {
             steps {
-                // No need for venv in Docker - Python is already set up
-                sh "python read_json.py --file ${params.JSON_FILE_PATH}"
+                // Run Python script with appropriate command
+                sh '''
+                    if command -v python3 &> /dev/null; then
+                        python3 read_json.py --file ${JSON_FILE_PATH}
+                    elif command -v python &> /dev/null; then
+                        python read_json.py --file ${JSON_FILE_PATH}
+                    else
+                        echo "ERROR: No Python interpreter found."
+                        echo "Please install Python in your Jenkins environment."
+                        exit 1
+                    fi
+                '''
             }
         }
     }
