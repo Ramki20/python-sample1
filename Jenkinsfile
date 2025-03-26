@@ -4,12 +4,16 @@ pipeline {
     // Define parameters for the pipeline
     parameters {
         string(name: 'JSON_FILE_PATH', defaultValue: 'data/config.json', description: 'Path to the JSON file to read')
+        string(name: 'AWS_APPCONFIG_APP', defaultValue: 'app0001', description: 'AWS AppConfig application name')
+        string(name: 'AWS_APPCONFIG_PROFILE', defaultValue: 'olacon1', description: 'AWS AppConfig configuration profile')
+        string(name: 'AWS_APPCONFIG_ENV', defaultValue: 'default', description: 'AWS AppConfig environment')
     }
     
     // Define environment variables
     environment {
         BRANCH_NAME = "${env.GIT_BRANCH ?: 'main'}".replaceFirst('origin/', '')
         ENV_NAME = "${BRANCH_NAME}" // Uses the branch name to determine environment
+        AWS_REGION = "us-east-1" // Default AWS region, can be overridden
     }
     
     stages {
@@ -24,7 +28,7 @@ pipeline {
             }
         }
         
-        stage('Install Python') {
+        stage('Install Python and Dependencies') {
             steps {
                 // Attempt to install Python directly
                 sh '''
@@ -42,6 +46,9 @@ pipeline {
                     
                     # Check if Python was successfully installed
                     python3 --version || echo "Failed to install Python3"
+                    
+                    # Install AWS SDK for Python (boto3)
+                    python3 -m pip install boto3 || sudo python3 -m pip install boto3
                 '''
             }
         }
@@ -62,14 +69,43 @@ pipeline {
                 '''
             }
         }
+        
+        stage('Get AWS AppConfig') {
+            steps {
+                // Configure AWS credentials
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
+                                  credentialsId: 'aws-credentials',
+                                  accessKeyVariable: 'AWS_ACCESS_KEY_ID', 
+                                  secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                    
+                    // Set AWS region
+                    withEnv(["AWS_DEFAULT_REGION=${AWS_REGION}"]) {
+                        
+                        // Run Python script to retrieve AWS AppConfig
+                        sh '''
+                            echo "Retrieving AWS AppConfig for application: ${AWS_APPCONFIG_APP}, profile: ${AWS_APPCONFIG_PROFILE}"
+                            
+                            if command -v python3 &> /dev/null; then
+                                python3 get_aws_appconfig.py --app ${AWS_APPCONFIG_APP} --profile ${AWS_APPCONFIG_PROFILE} --env ${AWS_APPCONFIG_ENV}
+                            elif command -v python &> /dev/null; then
+                                python get_aws_appconfig.py --app ${AWS_APPCONFIG_APP} --profile ${AWS_APPCONFIG_PROFILE} --env ${AWS_APPCONFIG_ENV}
+                            else
+                                echo "ERROR: No Python interpreter found."
+                                exit 1
+                            fi
+                        '''
+                    }
+                }
+            }
+        }
     }
     
     post {
         success {
-            echo "Successfully processed JSON file in ${ENV_NAME} environment"
+            echo "Successfully processed JSON file and AWS AppConfig in ${ENV_NAME} environment"
         }
         failure {
-            echo "Failed to process JSON file in ${ENV_NAME} environment"
+            echo "Failed to process JSON file or AWS AppConfig in ${ENV_NAME} environment"
         }
     }
 }
